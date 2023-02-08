@@ -12,6 +12,12 @@ type FoodMenu struct {
 	Price		int
 }
 
+type DrinkMenu struct {
+	Nama		string
+	TypeDrink	string
+	Price		int
+}
+
 func getFoodMenu(c echo.Context) error {
 	foodMenu := []FoodMenu{
 		{
@@ -31,8 +37,28 @@ func getFoodMenu(c echo.Context) error {
 	})
 }
 
+func getDrinkMenu(c echo.Context) error{
+	drinkMenu := []DrinkMenu{
+		{
+			Nama: "Bobba Gum",
+			TypeDrink: "Bukan Soda",
+			Price: 1020004,
+		},
+
+		{
+			Nama: "Orang Tua",
+			TypeDrink: "Alkohol",
+			Price: 90000,
+		},
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": drinkMenu,
+	})
+}
+
 func main()  {
 	e := echo.New()
 	e.GET("/menu/food", getFoodMenu)
+	e.GET("/menu/drink", getDrinkMenu)
 	e.Logger.Fatal(e.Start(":8080"))
 }
