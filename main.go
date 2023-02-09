@@ -1,25 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-type FoodMenu struct {
+func main()  {
+	seedDB()
+	e := echo.New()
+	e.GET("/menu/food", getFoodMenu)
+	e.GET("/menu/drink", getDrinkMenu)
+	e.Logger.Fatal(e.Start(":8080"))
+}
+
+type MenuItem struct {
 	Name		string
 	OrderCode 	string
-	Price		int
+	Price		int64
 }
 
-type DrinkMenu struct {
-	Nama		string
-	TypeDrink	string
-	Price		int
-}
 
-func getFoodMenu(c echo.Context) error {
-	foodMenu := []FoodMenu{
+func seedDB()  {
+	foodMenu := []MenuItem{
 		{
 			Name: "Rendang",
 			OrderCode: "Padang",
@@ -32,33 +38,40 @@ func getFoodMenu(c echo.Context) error {
 			Price: 100000,
 		},
 	}
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"data": foodMenu,
-	})
-}
 
-func getDrinkMenu(c echo.Context) error{
-	drinkMenu := []DrinkMenu{
+	drinkMenu := []MenuItem{
 		{
-			Nama: "Bobba Gum",
-			TypeDrink: "Bukan Soda",
+			Name: "Bobba Gum",
+			OrderCode: "Bukan Soda",
 			Price: 1020004,
 		},
 
 		{
-			Nama: "Orang Tua",
-			TypeDrink: "Alkohol",
+			Name: "Orang Tua",
+			OrderCode: "Alkohol",
 			Price: 90000,
 		},
 	}
+
+	fmt.Println(foodMenu,drinkMenu)
+
+	dbAddress := "host=localhost port=5432 user=iqbalp12 password=mbangg12 dbname=go_resto_sim sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dbAddress))
+	if err != nil {
+		panic(err)
+	}
+
+	db.AutoMigrate(&MenuItem{})
+}
+
+func getFoodMenu(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"data": drinkMenu,
+		// "data": foodMenu,
 	})
 }
 
-func main()  {
-	e := echo.New()
-	e.GET("/menu/food", getFoodMenu)
-	e.GET("/menu/drink", getDrinkMenu)
-	e.Logger.Fatal(e.Start(":8080"))
+func getDrinkMenu(c echo.Context) error{
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		// "data": drinkMenu,
+	})
 }
