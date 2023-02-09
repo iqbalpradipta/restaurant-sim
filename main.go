@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -8,47 +9,47 @@ import (
 	"gorm.io/gorm"
 )
 
+type MenuType string
+
+const (
+	Food  MenuType = "food"
+	Drink MenuType = "drink"
+)
+
 const (
 	dbAddress = "host=localhost port=5432 user=postgres password=mbangg12 dbname=go_resto_sim sslmode=disable"
 )
 
-func main()  {
-	seedDB()
-	e := echo.New()
-	e.GET("/menu/food", getFoodMenu)
-	e.GET("/menu/drink", getDrinkMenu)
-	e.Logger.Fatal(e.Start(":8080"))
-}
-
-type MenuType string
-
-const (
-	MenuTypeFood = "food"
-	MenuTypeDrink = "drink"
-)
-
 type MenuItem struct {
-	Name		string
-	OrderCode 	string
-	Price		int64
-	Type		MenuType
+	OrderCode string `gorm:"primaryKey"`
+	Name      string
+	Price     int64
+	Type      MenuType
 }
 
+func seedDB() {
+	dbAddress := "host=localhost port=5432 user=postgres password=mbangg12 dbname=go_resto_sim sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dbAddress), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
 
-func seedDB()  {
+	// Migrate the schema
+	db.AutoMigrate(&MenuItem{})
+
 	foodMenu := []MenuItem{
 		{
 			Name: "Rendang",
 			OrderCode: "Padang",
 			Price: 1000000,
-			Type: MenuTypeFood,
+			Type: Food,
 		},
 
 		{
 			Name: "AyamBakar",
 			OrderCode: "Warteg",
 			Price: 100000,
-			Type: MenuTypeFood,
+			Type: Food,
 		},
 	}
 
@@ -57,50 +58,49 @@ func seedDB()  {
 			Name: "Bobba Gum",
 			OrderCode: "Bukan Soda",
 			Price: 1020004,
-			Type: MenuTypeDrink,
+			Type: Drink,
 		},
 
 		{
 			Name: "Orang Tua",
 			OrderCode: "Alkohol",
 			Price: 90000,
-			Type: MenuTypeDrink,
+			Type: Drink,
 		},
 	}
 
-	db, err := gorm.Open(postgres.Open(dbAddress))
-	if err != nil {
-		panic(err)
-	}
-
 	if err := db.First(&MenuItem{}).Error; err == gorm.ErrRecordNotFound {
+		fmt.Println("Seeding db data...")
 		db.Create(&foodMenu)
 		db.Create(&drinkMenu)
 	}
 }
 
-func getFoodMenu(c echo.Context) error {
-	db, err := gorm.Open(postgres.Open(dbAddress))
-	if err != nil{
-		panic(err)
-	}
+func main() {
+	e := echo.New()
 
-	var menuData []MenuItem
-	db.Where(MenuItem{Type: MenuTypeFood}).Find(&menuData)
+	seedDB()
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"data": menuData,
-	})
+	e.GET("/menu", GetMenu)
+
+	e.Logger.Fatal(e.Start((":14045")))
 }
 
-func getDrinkMenu(c echo.Context) error{
-	db, err := gorm.Open(postgres.Open(dbAddress))
+func GetMenu(c echo.Context) error {
+	menuType := c.FormValue("menu_type")
+
+	db, err := gorm.Open(postgres.Open(dbAddress), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		panic("failed to connect database")
 	}
 
-	var menuData []MenuItem
-	db.Where(MenuItem{Type: MenuTypeDrink}).Find(&menuData)
+	menuData := make([]MenuItem, 0)
+
+	if err := db.Where(MenuItem{Type: MenuType(menuType)}).Find(&menuData).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"data": menuData,
