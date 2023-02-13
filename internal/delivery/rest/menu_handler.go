@@ -10,7 +10,7 @@ import (
 func(h *handler) GetMenu(c echo.Context) error {
 	menuType := c.FormValue("menu_type")
 	
-	menuData, err := h.restoUsecase.GetMenu(menuType)
+	menuData, err := h.restoUsecase.GetMenuLList(menuType)
 	if err != nil {
 		fmt.Printf("got Error %s\n", err.Error())
 		return c.JSON (http.StatusInternalServerError, map[string]interface{}{
